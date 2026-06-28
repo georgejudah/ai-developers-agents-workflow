@@ -1,0 +1,277 @@
+{
+  "name": "Open WebUI → Developer Agents Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-ticket",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "process-ticket"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "tickets",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "external_issue_id",
+              "fieldValue": "={{ $json.ticket_id }}"
+            },
+            {
+              "fieldName": "spec",
+              "fieldValue": "={{ $json.spec }}"
+            },
+            {
+              "fieldName": "repo_url",
+              "fieldValue": "={{ $json.repo_url }}"
+            },
+            {
+              "fieldName": "status",
+              "fieldValue": "coding"
+            },
+            {
+              "fieldName": "qa_retry_count",
+              "fieldValue": "0"
+            }
+          ]
+        }
+      },
+      "id": "supabase-insert",
+      "name": "Create Ticket in Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://your-server:8000/process-ticket",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticket_id",
+              "value": "={{ $json.ticket_id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "trigger-workflow",
+      "name": "Trigger LangGraph Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "completed"
+            }
+          ]
+        }
+      },
+      "id": "check-status",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "tickets",
+        "filterType": "manual",
+        "matchType": "match",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "status",
+              "fieldValue": "={{ $json.status }}"
+            },
+            {
+              "fieldName": "pr_url",
+              "fieldValue": "={{ $json.result.pr_url }}"
+            }
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "external_issue_id",
+              "condition": "equals",
+              "keyValue": "={{ $json.ticket_id }}"
+            }
+          ]
+        }
+      },
+      "id": "update-success",
+      "name": "Update Ticket (Success)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "tickets",
+        "filterType": "manual",
+        "matchType": "match",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "status",
+              "fieldValue": "failed"
+            },
+            {
+              "fieldName": "error_logs",
+              "fieldValue": "={{ $json.result.error || 'Unknown error' }}"
+            }
+          ]
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "external_issue_id",
+              "condition": "equals",
+              "keyValue": "={{ $json.ticket_id }}"
+            }
+          ]
+        }
+      },
+      "id": "update-failure",
+      "name": "Update Ticket (Failed)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1050, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  success: true,\n  ticket_id: $json.ticket_id,\n  status: $json.status,\n  pr_url: $json.result?.pr_url,\n  message: 'Workflow completed'\n}) }}"
+      },
+      "id": "webhook-response",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Ticket in Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Ticket in Supabase": {
+      "main": [
+        [
+          {
+            "node": "Trigger LangGraph Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger LangGraph Workflow": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Ticket (Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Ticket (Success)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Ticket (Failed)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-06-28T12:00:00.000Z",
+  "versionId": "1"
+}

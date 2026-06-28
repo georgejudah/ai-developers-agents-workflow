@@ -1,0 +1,172 @@
+# Developer Agents Workflow
+
+Autonomous coding agent that fetches tickets from a database, generates code patches using LLMs, and creates GitHub pull requests automatically.
+
+## Quick Start
+
+### 1. Setup Environment
+
+```bash
+# Copy example config
+cp .env.example .env
+
+# Edit .env with your credentials
+nano .env
+```
+
+### 2. Choose Your LLM Provider
+
+#### Option A: Ollama (Local, FREE) ⭐ Recommended for M1/M2/M3/M4
+
+```bash
+# Install Ollama
+brew install ollama
+
+# Download a model (choose one):
+ollama pull qwen2.5-coder:7b     # Fast, 5-6GB RAM
+ollama pull qwen2.5-coder:14b    # Better quality, 10GB RAM
+ollama pull deepseek-coder-v2:16b # Excellent quality, 12GB RAM
+
+# Start Ollama server
+ollama serve
+```
+
+In your `.env`:
+```bash
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5-coder:7b  # or 14b, 16b, etc.
+```
+
+#### Option B: OpenRouter (API, Paid)
+
+Get your API key from https://openrouter.ai/
+
+In your `.env`:
+```bash
+LLM_PROVIDER=openrouter
+LLM_MODEL=deepseek/deepseek-v4-flash
+OPENROUTER_API_KEY=your_key_here
+```
+
+### 3. Install Dependencies
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 4. Run the Agent
+
+```bash
+python main.py
+```
+
+## Switching Between Models
+
+Just update your `.env` file:
+
+### Switch to Ollama 7B (fastest, free):
+```bash
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5-coder:7b
+```
+
+### Switch to Ollama 14B (better quality, free):
+```bash
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5-coder:14b
+```
+
+## 📊 Observability (Optional)
+
+Track all LLM calls, costs, and workflow performance with **Langfuse**:
+
+1. Sign up at https://cloud.langfuse.com (free tier)
+2. Add to `.env`:
+   ```bash
+   LANGFUSE_PUBLIC_KEY=pk-lf-xxxxxxxx
+   LANGFUSE_SECRET_KEY=sk-lf-xxxxxxxx
+   LANGFUSE_HOST=https://cloud.langfuse.com
+   ```
+3. Run workflow → View traces in dashboard
+
+**What you get:**
+- 🔍 Full LLM prompt/response traces
+- 💰 Cost tracking per ticket (<$0.0066 target)
+- 📈 Success rates and retry patterns
+- 🐛 Debug failed workflows with full context
+
+**See**: [OBSERVABILITY.md](OBSERVABILITY.md) for complete setup guide
+
+## 🚀 API Server
+
+Run as an API server for n8n/Open WebUI integration:
+
+```bash
+uvicorn api:api --host 0.0.0.0 --port 8000
+```
+
+**Endpoints:**
+- `POST /process-ticket` - Trigger workflow for a ticket
+- `GET /health` - Health check
+
+**Example:**
+```bash
+curl -X POST http://localhost:8000/process-ticket \
+  -H "Content-Type: application/json" \
+  -d '{"ticket_id": "YOUR-TICKET-ID"}'
+```
+
+### Switch back to OpenRouter:
+```bash
+LLM_PROVIDER=openrouter
+LLM_MODEL=deepseek/deepseek-v4-flash
+```
+
+**No code changes needed!** Just restart `python main.py`.
+
+## Model Comparison
+
+| Model | Provider | Speed | Quality | Cost |
+|-------|----------|-------|---------|------|
+| qwen2.5-coder:7b | Ollama | ⚡⚡⚡ | ⭐⭐⭐½ | FREE |
+| qwen2.5-coder:14b | Ollama | ⚡⚡ | ⭐⭐⭐⭐ | FREE |
+| deepseek-coder-v2:16b | Ollama | ⚡⚡ | ⭐⭐⭐⭐⭐ | FREE |
+| deepseek/deepseek-v4-flash | OpenRouter | ⚡⚡ | ⭐⭐⭐⭐⭐ | $0.14/M |
+
+## Architecture
+
+- **LangGraph**: Orchestrates the workflow (coder → QA → PR)
+- **Supabase**: Stores tickets and patch history
+- **Git**: Manages workspaces and branches
+- **GitHub API**: Creates pull requests
+- **LLM**: Generates code patches
+
+## Project Structure
+
+```
+main.py                 # LangGraph workflow orchestration
+helpers/
+  llm.py               # LLM integration (Ollama/OpenRouter)
+  workspace.py         # Git operations and file selection
+  github_pr.py         # PR creation and patch application
+  supabase.py          # Database operations
+  context.py           # Project context loading
+  tickets.py           # Ticket data structures
+```
+
+## Features
+
+- ✅ Multi-model support (local + API)
+- ✅ Intelligent file selection
+- ✅ Project context awareness
+- ✅ Patch validation
+- ✅ Automatic PR creation
+- ✅ Error recovery and retries
+- ✅ Cost optimization
+
+## Cost Estimate
+
+- **Ollama (local)**: $0.00 forever ✅
+- **OpenRouter**: ~$0.0066 per ticket (~$13.20 for 2000 tickets)
