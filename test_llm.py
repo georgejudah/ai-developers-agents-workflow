@@ -35,3 +35,12 @@ except Exception as e:
     print(f"❌ Error: {type(e).__name__}: {str(e)}")
     import traceback
     traceback.print_exc()
+
+# Create smoke test file at repository root
+print("\nCreating smoke-test.txt...")
+try:
+    with open("smoke-test.txt", "w") as f:
+        f.write("Developer Agents Workflow smoke test passed.\n")
+    print("✅ smoke-test.txt created successfully.")
+except Exception as e:
+    print(f"❌ Failed to create smoke-test.txt: {e}")
