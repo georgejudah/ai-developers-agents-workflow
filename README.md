@@ -123,6 +123,14 @@ curl -X POST http://localhost:8000/process-ticket \
 
 For production deployment, run the API server as a systemd service with auto-restart, log rotation, and health monitoring.
 
+You can install the systemd service automatically using the provided script:
+
+```bash
+bash scripts/install-systemd-service.sh
+```
+
+### Service Unit File
+
 ### Service Unit File
 
 Create `/etc/systemd/system/developer-agents-api.service`:
