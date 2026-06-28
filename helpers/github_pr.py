@@ -119,6 +119,11 @@ def apply_patch_and_create_pr(repo_path: str, patch: dict, ticket_id: str, spec:
         print(f"[PR] Modified files: {changed_files}")
 
         print(f"[PR] Committing changes...")
+        commit_name = os.getenv("GIT_COMMIT_NAME", "Developer Agents Workflow")
+        commit_email = os.getenv("GIT_COMMIT_EMAIL", "developer-agents@example.com")
+        subprocess.run(["git", "config", "user.name", commit_name], cwd=repo_path, check=True)
+        subprocess.run(["git", "config", "user.email", commit_email], cwd=repo_path, check=True)
+
         # Remove stale artifact from old git-apply approach if present
         stale_patch = os.path.join(repo_path, ".agent_patch.diff")
         if os.path.exists(stale_patch):

@@ -37,11 +37,13 @@ logger = logging.getLogger(__name__)
 # Global Langfuse instance
 _langfuse = None
 _langfuse_enabled = False
+_langfuse_trace_supported = False
+_langfuse_trace_warning_logged = False
 
 
 def init_langfuse():
     """Initialize Langfuse observability if credentials are provided."""
-    global _langfuse, _langfuse_enabled
+    global _langfuse, _langfuse_enabled, _langfuse_trace_supported, _langfuse_trace_warning_logged
     
     public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
     secret_key = os.getenv("LANGFUSE_SECRET_KEY")
@@ -61,6 +63,13 @@ def init_langfuse():
             host=host
         )
         _langfuse_enabled = True
+        _langfuse_trace_supported = hasattr(_langfuse, "trace")
+        _langfuse_trace_warning_logged = False
+        if not _langfuse_trace_supported:
+            logger.warning(
+                "[Observability] Langfuse client does not expose trace(); workflow tracing will be disabled, "
+                "but LLM client wrapping may still work."
+            )
         logger.info(f"[Observability] ✓ Langfuse initialized: {host}")
         return _langfuse
     except ImportError:
@@ -81,6 +90,11 @@ def get_langfuse():
 def is_enabled():
     """Check if Langfuse observability is enabled."""
     return _langfuse_enabled
+
+
+def _workflow_tracing_available() -> bool:
+    """Return True when the loaded Langfuse client supports trace() API."""
+    return bool(_langfuse_enabled and _langfuse and _langfuse_trace_supported and hasattr(_langfuse, "trace"))
 
 
 def get_traced_llm_client(provider: str = "ollama", model: str = None):
@@ -155,7 +169,15 @@ def trace_workflow(agent_name: str = None):
     def decorator(func):
         @wraps(func)
         def wrapper(state, *args, **kwargs):
-            if not _langfuse_enabled:
+            global _langfuse_trace_warning_logged
+
+            if not _workflow_tracing_available():
+                if _langfuse_enabled and _langfuse and not _langfuse_trace_warning_logged:
+                    logger.warning(
+                        "[Observability] Skipping workflow trace because this Langfuse SDK lacks trace(); "
+                        "function will run without workflow spans."
+                    )
+                    _langfuse_trace_warning_logged = True
                 # Just run the function normally if observability is disabled
                 return func(state, *args, **kwargs)
             

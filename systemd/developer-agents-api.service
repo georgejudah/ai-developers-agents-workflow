@@ -1,0 +1,19 @@
+[Unit]
+Description=Developer Agents Workflow API Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/projects/ai-developers-agents-workflow
+Environment="PATH=/root/projects/ai-developers-agents-workflow/venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/root/projects/ai-developers-agents-workflow/.env
+ExecStart=/root/projects/ai-developers-agents-workflow/venv/bin/uvicorn api:api --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=developer-agents-api
+
+[Install]
+WantedBy=multi-user.target

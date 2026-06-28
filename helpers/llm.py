@@ -49,6 +49,14 @@ def generate_patch(spec: str, file_contexts: dict, error_logs: list = None, repo
             client, project_context, spec, path, content, error_logs, max_lines=99999
         )
         result = {path: blocks}
+
+        # Single-file tickets can still require brand-new files.
+        # Ask for them here as well so systemd/service scaffolding is not skipped.
+        NEW_FILE_SIGNALS = ["create", "new component", "new page", "new file",
+                            "add a route", "build a", "typing game", "new feature"]
+        if any(s in spec.lower() for s in NEW_FILE_SIGNALS):
+            new_files = _generate_new_files(client, project_context, spec, [path])
+            result.update(new_files)
         
         # Generate Playwright test for UI changes (single file case)
         ui_test = _generate_playwright_test(client, repo_path, spec, [path])
