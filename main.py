@@ -29,6 +29,10 @@ logger = logging.getLogger(__name__)
 init_langfuse()
 
 
+# Note: Langfuse is configured via LANGFUSE_HOST=http://192.168.0.146:3002.
+# See quick-start sections in README.md for setup details.
+
+
 # define the nodes and edges for the graph below
 
 @trace_workflow("coder_agent")
