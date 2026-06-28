@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Langfuse is configured with LANGFUSE_HOST=http://192.168.0.146:3002
+
 # Create smoke test file
 with open("smoke-test.txt", "w") as f:
     f.write("Developer Agents Workflow smoke test passed.\n")

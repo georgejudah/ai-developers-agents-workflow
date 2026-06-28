@@ -47,7 +47,7 @@ def init_langfuse():
     
     public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
     secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-    host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+    host = os.getenv("LANGFUSE_HOST", "http://192.168.0.146:3002")
     
     if not public_key or not secret_key:
         logger.warning("[Observability] Langfuse credentials not found. Observability disabled.")
