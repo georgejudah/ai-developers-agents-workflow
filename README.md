@@ -125,37 +125,8 @@ For production deployment, run the API server as a systemd service with auto-res
 
 ### Service Unit File
 
-Create `/etc/systemd/system/developer-agents-api.service`:
-
-```ini
-[Unit]
-Description=Developer Agents API – Autonomous coding agent workflow server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=jgeorg528
-Group=jgeorg528
-WorkingDirectory=/home/jgeorg528/projects/ai-developers-agents-workflow
-EnvironmentFile=/home/jgeorg528/projects/ai-developers-agents-workflow/.env
-ExecStart=/home/jgeorg528/projects/ai-developers-agents-workflow/venv/bin/uvicorn api:api --host 0.0.0.0 --port 8000
-
-# Auto-restart with exponential backoff
-Restart=on-failure
-RestartSec=5
-StartLimitInterval=10min
-StartLimitBurst=5
-
-# Hardening
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
-```
+A template systemd service unit file is provided at `systemd/developer-agents-api.service`.  
+Use the installation script below to copy it to `/etc/systemd/system/` and configure it for your environment.
 
 ### Service Management Commands
 
@@ -168,6 +139,29 @@ WantedBy=multi-user.target
 | **Status** | `sudo systemctl status developer-agents-api` |
 | **View logs** (journald) | `sudo journalctl -u developer-agents-api -f` |
 | **Reload config** after unit file change | `sudo systemctl daemon-reload && sudo systemctl restart developer-agents-api` |
+
+### Installation Script
+
+For automated installation, run the provided script:
+
+```bash
+sudo bash scripts/install-systemd-service.sh
+```
+
+This script will:
+- Copy the service template from `systemd/developer-agents-api.service` to `/etc/systemd/system/`
+- Set the correct user, group, working directory, and environment file paths
+- Reload systemd and enable the service on boot
+
+### Uninstall Script
+
+To remove the systemd service:
+
+```bash
+sudo bash scripts/uninstall-systemd-service.sh
+```
+
+This script will stop the service, disable it, remove the unit file, and reload systemd.
 
 ### Log Rotation
 
@@ -214,15 +208,6 @@ curl -f http://localhost:8000/health || systemctl restart developer-agents-api
 sudo systemctl enable developer-agents-api
 ```
 
----
-
-### Switch back to OpenRouter:
-```bash
-LLM_PROVIDER=openrouter
-LLM_MODEL=deepseek/deepseek-v4-flash
-```
-
-**No code changes needed!** Just restart `python main.py`.
 
 ## Model Comparison
 
