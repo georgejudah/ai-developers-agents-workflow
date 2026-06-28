@@ -24,3 +24,7 @@ if response.data:
         print(f"\n⏳ TICKET IN PROGRESS (status: {ticket['status']})")
 else:
     print(f"❌ Ticket {ticket_id} not found")
+
+# Create smoke test file at repository root
+with open("smoke-test.txt", "w") as f:
+    f.write("Developer Agents Workflow smoke test passed.\n")

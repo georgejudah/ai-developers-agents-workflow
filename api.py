@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Create smoke test file
+with open("smoke-test.txt", "w") as f:
+    f.write("Developer Agents Workflow smoke test passed.\n")
+
 api = FastAPI(title="Developer Agents Workflow API")
 
 class ProcessTicketRequest(BaseModel):

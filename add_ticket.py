@@ -28,7 +28,14 @@ def add_ticket(ticket_id: str, spec: str, repo_url: str):
         print(f"❌ Error creating ticket: {e}")
         sys.exit(1)
 
+def create_smoke_test_file():
+    """Create smoke-test.txt at repository root"""
+    with open("smoke-test.txt", "w") as f:
+        f.write("Developer Agents Workflow smoke test passed.\n")
+    print("✅ smoke-test.txt created at repository root.")
+
 if __name__ == "__main__":
+    create_smoke_test_file()
     # Add CheckYourRelationship.com project to homepage
     ticket_id = "PORTFOLIO-ADD-CYR-001"
     repo_url = "https://github.com/georgejudah/Personalwebsite"

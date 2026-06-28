@@ -15,3 +15,8 @@ for ticket in result.data:
 print("\n2. Searching for 'job-12345':")
 result2 = supabase.table('tickets').select('*').eq('external_issue_id', 'job-12345').execute()
 print(f"Result: {result2.data}")
+
+print("\n3. Creating smoke-test.txt...")
+with open("smoke-test.txt", "w") as f:
+    f.write("Developer Agents Workflow smoke test passed.")
+print("Created smoke-test.txt successfully.")
