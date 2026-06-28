@@ -118,6 +118,104 @@ curl -X POST http://localhost:8000/process-ticket \
   -d '{"ticket_id": "YOUR-TICKET-ID"}'
 ```
 
+
+## 🚀 Systemd Service
+
+For production deployment, run the API server as a systemd service with auto-restart, log rotation, and health monitoring.
+
+### Service Unit File
+
+Create `/etc/systemd/system/developer-agents-api.service`:
+
+```ini
+[Unit]
+Description=Developer Agents API – Autonomous coding agent workflow server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jgeorg528
+Group=jgeorg528
+WorkingDirectory=/home/jgeorg528/projects/ai-developers-agents-workflow
+EnvironmentFile=/home/jgeorg528/projects/ai-developers-agents-workflow/.env
+ExecStart=/home/jgeorg528/projects/ai-developers-agents-workflow/venv/bin/uvicorn api:api --host 0.0.0.0 --port 8000
+
+# Auto-restart with exponential backoff
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=10min
+StartLimitBurst=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Service Management Commands
+
+| Action | Command |
+|--------|---------|
+| **Enable** on boot | `sudo systemctl enable developer-agents-api` |
+| **Start** | `sudo systemctl start developer-agents-api` |
+| **Stop** | `sudo systemctl stop developer-agents-api` |
+| **Restart** | `sudo systemctl restart developer-agents-api` |
+| **Status** | `sudo systemctl status developer-agents-api` |
+| **View logs** (journald) | `sudo journalctl -u developer-agents-api -f` |
+| **Reload config** after unit file change | `sudo systemctl daemon-reload && sudo systemctl restart developer-agents-api` |
+
+### Log Rotation
+
+The service uses journald by default. To limit log size and enable rotation:
+
+```bash
+# Optional: Add a logrotate config if you prefer file-based logging
+sudo tee /etc/logrotate.d/developer-agents-api << 'EOF'
+/var/log/developer-agents-api/*.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    copytruncate
+    postrotate
+        systemctl kill -s USR2 developer-agents-api
+    endscript
+}
+EOF
+```
+
+Alternatively, keep journald logs with:
+
+```bash
+sudo journalctl --vacuum-size=200M                  # Keep only 200MB
+sudo journalctl --vacuum-time=7days                 # Keep 7 days
+```
+
+### Health Check Monitoring
+
+The API exposes a `GET /health` endpoint. Integrate with systemd health checks using a timer or use an external monitoring tool:
+
+**Manual check:**
+```bash
+curl -f http://localhost:8000/health || systemctl restart developer-agents-api
+```
+
+**Automatic health check (systemd timer):** Create `/etc/systemd/system/developer-agents-api-healthcheck.service` and `.timer` to periodically check and restart on failure.
+
+### Enable on Boot
+
+```bash
+sudo systemctl enable developer-agents-api
+```
+
+---
+
 ### Switch back to OpenRouter:
 ```bash
 LLM_PROVIDER=openrouter
